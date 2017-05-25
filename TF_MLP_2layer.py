@@ -80,9 +80,9 @@ for i in range (1,len(sys.argv),2):
     activation_function = sys.argv[i+1] 
   if sys.argv[i] == "-epochs":
     training_epochs = int(sys.argv[i+1])
-  if sys.argv[i] == "-l1":
+  if sys.argv[i] == "-hl1":
     n_hidden_1 = int(sys.argv[i+1])
-  if sys.argv[i] == "-l2":
+  if sys.argv[i] == "-hl2":
     n_hidden_2 = int(sys.argv[i+1])
   if sys.argv[i] == "-lr":
     learning_rate = float(sys.argv[i+1])
@@ -153,7 +153,7 @@ for i in range(1,num_cvs+1):
     sess.run(init)
 
     for epoch in range(training_epochs):
-        sess.run(optimizer, feed_dict = {nn_x:X_train, nn_y:y_train})
+        #sess.run(optimizer, feed_dict = {nn_x:X_train, nn_y:y_train})
         c = sess.run(loss,feed_dict = {nn_x:X_train, nn_y:y_train})
 
         if (epoch+1) % 250 == 0:
