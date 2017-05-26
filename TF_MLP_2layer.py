@@ -1,13 +1,13 @@
 """
+Log on to development node with GPUs:
+$ ssh dev-intel16-k80   
 
-Run the following code in HPC to:
-    load linuxbrew
-    load modules required by tensorflow
-    activate the tensorflow python environment
-    
-source /opt/software/tensorflow/1.1.0/load_tf
+Load linuxbrew, modules required by tensorflow, and activate the tensorflow python environment
+$ source /opt/software/tensorflow/1.1.0/load_tf
 
-python TF_MLP_2layer.py -x geno.csv -y pheno.csv -label Yld_Env1 -cv CVFs.csv -JobID 2
+Run example MLP:
+$ python TF_MLP_2layer.py -x geno.csv -y pheno.csv -label Yld_Env1 -cv CVFs.csv -JobID 2 -epochs 100
+
 """
 
 
@@ -23,9 +23,7 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 
-print("Test of TensorFlow install with Python 3.5.  This tests regression on GS data")
 # FUNCTIONS
-
 def multilayer_perceptron(x, weights, biases, activation_function):
     if activation_function == 'relu':
         # Hidden layer with RELU activation
@@ -153,7 +151,7 @@ for i in range(1,num_cvs+1):
     sess.run(init)
 
     for epoch in range(training_epochs):
-        #sess.run(optimizer, feed_dict = {nn_x:X_train, nn_y:y_train})
+        sess.run(optimizer, feed_dict = {nn_x:X_train, nn_y:y_train})
         c = sess.run(loss,feed_dict = {nn_x:X_train, nn_y:y_train})
 
         if (epoch+1) % 250 == 0:
