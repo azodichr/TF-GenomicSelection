@@ -78,7 +78,7 @@ def multilayer_perceptron(x, weights, biases, layer_number, activation_function,
 #### Set default values #####
 activation_function = 'sigmoid'
 training_epochs = 1000
-arc = 100,50
+arc = '100,50'
 learning_rate = 0.01
 beta = 0.01  # regularization parameter 
 SAVE = 'x'
@@ -86,6 +86,7 @@ REG = 'l2'
 l1 = 0.5
 TAG = ""
 FEAT = 'pass'
+LABEL = 'pass'
 
 for i in range (1,len(sys.argv),2):
   if sys.argv[i] == "-x":
@@ -121,7 +122,9 @@ for i in range (1,len(sys.argv),2):
 
 
 if SAVE == 'x':
-    SAVE = LABEL + '_' + arc + '_' + activation_function + '_' + REG + '_' + str(JobID) + '.csv'
+    cwd = os.getcwd()
+    SAVE = cwd + LABEL + '_' + arc + '_' + activation_function + '_' + REG + '_' + str(JobID) + '.csv'
+    print(SAVE)
 
 # Read in the desired architecture
 arc = arc.strip().split(',')
@@ -129,27 +132,35 @@ archit = []
 for a in arc:
   archit.append(int(a))
 layer_number = len(archit)
+print('Architecture: %s' % str(archit))
 
 # Read in the desired regularization:
 regularize = REG.strip().split(',')
-print(regularize)
+print('Regularization: %s' % str(regularize))
 
-# Read in geno and pheno and remove non target phenotypes
+# Read in geno and remove unwanted features if needed
 x = pd.read_csv(X_file, sep=',', index_col = 0)
 if FEAT != 'pass':
     with open(FEAT) as f:
         features = f.read().strip().splitlines()
-        features = ['Class'] + features
     x = x.loc[:,features]
+
+
+# Read in pheno and select desired column if needed
 y = pd.read_csv(Y_file, sep=',', index_col = 0)
-y = y[[LABEL]]
+if LABEL != 'pass':
+    print('Building model to predict: %s' % str(LABEL))
+    y = y[[LABEL]]
+else:
+    print('Building multi-label model to predict all columns in y')
 yhat = np.zeros(shape = y.shape)
 
+# Read in cross validation scheme and determine number of CV sets
 cv_folds = pd.read_csv(CVs, sep=',', index_col=0)
-
 cv = cv_folds['cv_' + str(JobID)]
 print('Runing CV set: ' + str(JobID))
 num_cvs = np.ptp(cv) + 1  # Range of values in cv (PeakToPeak)
+
 training_error = []
 training_accuracy = []
 
@@ -214,38 +225,39 @@ for i in range(1,num_cvs+1):
         
         _, c, train_acc = sess.run([optimizer, loss, accuracy],feed_dict = {nn_x:X_train, nn_y:y_train, keep_prob:l1})
 
-        if (epoch+1) % 250 == 0:
-            print("Epoch:", '%04d' % (epoch+1), "Cost=", "{:.4f}".format(c), 'Training Accuracy=', '{:.4f}'.format(train_acc))
+        if (epoch+1) % 100 == 0:
+            print("Epoch:", '%04d' % (epoch+1), "Cost=", "{:.4f}".format(c))
 
         if epoch+1 == training_epochs:
             training_error.append(c) 
-            training_accuracy.append(train_acc)
             print('Final mse for training cv_%i: %.5f' % (i, c))
-            print('Final training accuracy for cv_%i: %.5f' % (i, train_acc))
             
     
     # Predict test set and add to yhat output
     y_pred = sess.run(pred, feed_dict={nn_x: X_test, keep_prob:1.0})
     yhat[cv == i] = y_pred
 
-
 testing_mse = np.mean((np.array(y)[:,0] - yhat[:,0])**2)
 cor = np.corrcoef(np.array(y)[:,0], yhat[:,0])
 
-stop_time = timeit.default_timer()
-
-run_time = stop_time - start_time
+run_time = timeit.default_timer() - start_time
 
 print('###################\nRESULTS\n###################\n')
 print('Training error (MSE +/- stdev): %0.5f (%0.5f)' % (np.mean(training_error), np.std(training_error)))
 print('Testing error (MSE): %0.5f' % (np.mean(testing_mse)))
-print('Training accuracy (correlation coef +/- stdev): %0.5f (%0.5f)' % (np.mean(training_accuracy), np.std(training_accuracy)))
 print('Accuracy (correlation coef): %.5f' % cor[0,1])
 print('\nRun time: %s' % str(run_time))
 
 # Save predicted values
-y['y_hat'] = yhat[:,0]
-y.to_csv(SAVE, sep=',')
+if LABEL != 'pass':
+    y['y_hat'] = yhat[:,0]
+    y.to_csv(SAVE, sep=',')
+else:
+    yhat_df = pd.DataFrame(yhat, index=y.index.values, columns=list(y))
+    yhat_df.columns = [str(col) + '_pred' for col in yhat_df.columns]
+    y_yhat = pd.concat([y,yhat_df], axis=1)
+    y_yhat.to_csv(SAVE, sep=',')
+
 
 if not os.path.isfile('RESULTS.txt'):
     out2 = open('RESULTS.txt', 'a')
