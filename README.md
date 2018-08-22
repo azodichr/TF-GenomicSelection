@@ -31,3 +31,11 @@ pip3 install --upgrade https://storage.googleapis.com/tensorflow/linux/gpu/tenso
 pip3 install matplotlib
 pip3 install numpy
 pip3 install pandas
+
+
+# Set up to run at WISC via GLBRC crediential
+
+1. Install GLBRC VPN for UW. 
+https://intranet.wei.wisc.edu/information_technology/Lists/KB/DispForm.aspx?ID=51
+
+2. 
